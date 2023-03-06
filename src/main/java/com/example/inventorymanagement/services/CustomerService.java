@@ -1,8 +1,6 @@
 package com.example.inventorymanagement.services;
 
-import com.example.inventorymanagement.entities.CartItem;
-import com.example.inventorymanagement.entities.Customer;
-import com.example.inventorymanagement.entities.Item;
+import com.example.inventorymanagement.entities.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,43 +10,37 @@ import java.util.Optional;
 
 @RestController
 public class CustomerService {
-    @Autowired
-    private CustomerRepository customerRepository;
-    @Autowired
-    private ItemService itemService;
+
     @GetMapping("/customer")
     public ArrayList<Customer> getAllCustomer(){
-        ArrayList<Customer> customers = new ArrayList<>();
-        customerRepository.findAll().forEach(customers::add);
-        return customers;
+        return Memory.getAllCustomers();
     }
     @PostMapping("/customer")
     public void addCustomer(@RequestBody Customer customer){
-        customerRepository.save(customer);
+        Memory.addCustomer(customer);
     }
     @GetMapping("/customer/{id}")
     public Optional<Customer> getCustomerById(@PathVariable String id){
-        Optional<Customer> customer = customerRepository.findById(id);
-        return customer;
+        return Optional.of(Memory.getCustomer(id));
     }
     @PutMapping("/customer")
     public void updateCustomer(@RequestBody Customer customer){
-        customerRepository.save(customer);
+        Memory.updateCustomer(customer);
     }
     @DeleteMapping("/customer/{id}")
     public void deleteCustomer(@PathVariable String id){
-        customerRepository.deleteById(id);
+        Memory.deleteCustomer(id);
     }
     @PutMapping("customer/{id}")
     @ResponseBody
     public String addItemToCart(@RequestBody CartItem cartItem, @PathVariable String id){
-        Optional<Customer> customer = customerRepository.findById(id);
-        Optional<Item> item = itemService.getItemById(cartItem.ItemId);
+        Optional<Customer> customer = Optional.of(Memory.getCustomer(id));
+        Optional<Item> item = Optional.of(Memory.getItem(cartItem.ItemId));
         return checkCustomer(customer, item, cartItem);
     }
     @GetMapping("customer/{id}/cart")
     public Map<String, Integer> getCart(@PathVariable String id){
-        Optional<Customer> customer = customerRepository.findById(id);
+        Optional<Customer> customer = Optional.of(Memory.getCustomer(id));
         if(customer.isPresent()){
             return customer.get().getCart();
         }
@@ -57,15 +49,23 @@ public class CustomerService {
 
     @GetMapping("customer/{id}/cart/total")
     @ResponseBody
-    public String getTotal(@PathVariable String id){
+    public Invoice getTotal(@PathVariable String id){
         Map<String, Integer> cart = getCart(id);
         int checkoutCost = 0;
+        InvoiceItem invoiceItem = new InvoiceItem();
+        Invoice invoice = new Invoice(id + "invoice");
         for (Map.Entry<String, Integer> cartItem : cart.entrySet()) {
-            Optional<Item> item = itemService.getItemById(cartItem.getKey());
-            if(item.isPresent())
-                checkoutCost += item.get().price*cartItem.getValue();
+            Optional<Item> item = Optional.of(Memory.getItem(cartItem.getKey()));
+            if(item.isPresent()) {
+                checkoutCost += item.get().price * cartItem.getValue();
+                invoiceItem.ItemId = item.get().Id;
+                invoiceItem.quantity = cartItem.getValue();
+                invoiceItem.price = item.get().price;
+                invoice.addToReceipt(invoiceItem);
+            }
         }
-        return "Total cost: " + checkoutCost;
+        invoice.total = checkoutCost;
+        return invoice;
     }
 
     @DeleteMapping("customer/{id}/cart/{itemId}")
@@ -73,10 +73,10 @@ public class CustomerService {
     public String deleteItem(@PathVariable String id, @PathVariable String itemId){
         Map<String, Integer> cart = getCart(id);
         if(cart.containsKey(itemId)){
-            Optional<Customer> customer = customerRepository.findById(id);
+            Optional<Customer> customer = Optional.of(Memory.getCustomer(id));
             if(customer.isPresent()){
                 customer.get().deleteFromCart(itemId);
-                customerRepository.save(customer.get());
+                Memory.updateCustomer(customer.get());
             }
             else
                 return "No such customer";
@@ -95,7 +95,7 @@ public class CustomerService {
     public String checkItem(Optional<Customer> customer, Optional<Item> item, CartItem cartItem){
         if(item.isPresent()){
             customer.get().addToCart(cartItem);
-            customerRepository.save(customer.get());
+            Memory.updateCustomer(customer.get());
         }
         else
             return "No such item";
