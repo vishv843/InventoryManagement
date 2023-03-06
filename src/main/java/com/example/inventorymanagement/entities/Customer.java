@@ -38,4 +38,8 @@ public class Customer {
         this.cart.remove(itemId);
     }
 
+    public void deleteCart(){
+        this.cart.clear();
+    }
+
 }

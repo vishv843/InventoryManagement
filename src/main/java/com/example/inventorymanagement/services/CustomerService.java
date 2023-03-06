@@ -68,6 +68,19 @@ public class CustomerService {
         return invoice;
     }
 
+    @DeleteMapping("customer/{id}/cart")
+    @ResponseBody
+    public String deleteCart(@PathVariable String id){
+        Optional<Customer> customer = getCustomerById(id);
+        if(customer.isPresent()) {
+            customer.get().deleteCart();
+            Memory.updateCustomer(customer.get());
+            return "Delete cart successful";
+        }
+        else
+            return "Customer not found";
+    }
+
     @DeleteMapping("customer/{id}/cart/{itemId}")
     @ResponseBody
     public String deleteItem(@PathVariable String id, @PathVariable String itemId){
