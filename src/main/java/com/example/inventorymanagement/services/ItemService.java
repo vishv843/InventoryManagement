@@ -1,6 +1,7 @@
 package com.example.inventorymanagement.services;
 
 import com.example.inventorymanagement.entities.Item;
+import com.example.inventorymanagement.entities.Memory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,29 +10,25 @@ import java.util.Optional;
 
 @RestController
 public class ItemService {
-    @Autowired
-    private ItemRepository itemRepository;
     @GetMapping ("/item")
     public ArrayList<Item> getAllItem(){
-        ArrayList<Item> items = new ArrayList<>();
-        itemRepository.findAll().forEach(items::add);
-        return items;
+        return Memory.getAllItems();
     }
     @PostMapping("/item")
     public void addItem(@RequestBody Item item){
-        itemRepository.save(item);
+        Memory.addItem(item);
     }
     @GetMapping("/item/{id}")
     public Optional<Item> getItemById(@PathVariable String id){
-        Optional<Item> item = itemRepository.findById(id);
+        Optional<Item> item = Optional.of(Memory.getItem(id));
         return item;
     }
     @PutMapping("/item")
     public void updateItem(@RequestBody Item item){
-        itemRepository.save(item);
+        Memory.updateItem(item);
     }
     @DeleteMapping("/item/{id}")
     public void deleteItem(@PathVariable String id){
-        itemRepository.deleteById(id);
+        Memory.deleteItem(id);
     }
 }
