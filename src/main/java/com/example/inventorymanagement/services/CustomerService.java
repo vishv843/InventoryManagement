@@ -34,11 +34,13 @@ public class CustomerService {
     @PutMapping("customer/{id}")
     @ResponseBody
     public String addItemToCart(@RequestBody CartItem cartItem, @PathVariable String id){
+        cartItem = checkForNegativeQuantity(cartItem);
         Optional<Customer> customer = Optional.of(Memory.getCustomer(id));
         Optional<Item> item = Optional.of(Memory.getItem(cartItem.ItemId));
         return checkCustomer(customer, item, cartItem);
     }
     @GetMapping("customer/{id}/cart")
+    @ResponseBody
     public Map<String, Integer> getCart(@PathVariable String id){
         Optional<Customer> customer = Optional.of(Memory.getCustomer(id));
         if(customer.isPresent()){
@@ -46,9 +48,20 @@ public class CustomerService {
         }
         return null;
     }
+    @PutMapping("customer/{id}/cart")
+    @ResponseBody
+    public String updateItemOnCart(@PathVariable String id, @RequestBody CartItem cartItem){
+        Optional<Customer> customer = Optional.of(Memory.getCustomer(id));
+        cartItem = checkForNegativeQuantity(cartItem);
+        if(customer.isPresent()){
+            customer.get().updateCart(cartItem);
+            Memory.updateCustomer(customer.get());
+            return "Cart item update successful";
+        }
+        return "No such customer";
+    }
 
     @GetMapping("customer/{id}/cart/total")
-    @ResponseBody
     public Invoice getTotal(@PathVariable String id){
         Map<String, Integer> cart = getCart(id);
         int checkoutCost = 0;
@@ -85,7 +98,7 @@ public class CustomerService {
     @ResponseBody
     public String deleteItem(@PathVariable String id, @PathVariable String itemId){
         Map<String, Integer> cart = getCart(id);
-        if(cart.containsKey(itemId)){
+        if(cart != null && cart.containsKey(itemId)){
             Optional<Customer> customer = Optional.of(Memory.getCustomer(id));
             if(customer.isPresent()){
                 customer.get().deleteFromCart(itemId);
@@ -113,5 +126,10 @@ public class CustomerService {
         else
             return "No such item";
         return "Successful";
+    }
+    public CartItem checkForNegativeQuantity(CartItem cartItem){
+        if(cartItem.quantity < 0)
+            cartItem.quantity = 0;
+        return cartItem;
     }
 }

@@ -42,4 +42,9 @@ public class Customer {
         this.cart.clear();
     }
 
+    public void updateCart(CartItem cartItem){
+        this.cart.remove(cartItem.ItemId);
+        this.cart.put(cartItem.ItemId, cartItem.quantity);
+    }
+
 }
