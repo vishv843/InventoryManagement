@@ -66,7 +66,7 @@ public class CustomerService {
         Map<String, Integer> cart = getCart(id);
         int checkoutCost = 0;
         InvoiceItem invoiceItem = new InvoiceItem();
-        Invoice invoice = new Invoice(id + "invoice");
+        Invoice invoice = new Invoice(""+(int)(Math.random()*100000));
         for (Map.Entry<String, Integer> cartItem : cart.entrySet()) {
             Optional<Item> item = Optional.of(Memory.getItem(cartItem.getKey()));
             if(item.isPresent()) {
